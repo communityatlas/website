@@ -1,0 +1,874 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Universal page margins: change these to adjust header, blocks and page-end together */
+:root {
+    --page-margin-inline: clamp(5%, 5vw, 15%);
+    --page-max-width: 90%;
+    --page-margin-outline: 2px; /* Slightly thicker than the 1px black outline used elsewhere */
+    /* Header scale: set by script.js from viewport width; 1 at ~14" (1440px), 1.5 at ~27" (2560px), 0.7 on phones */
+    --header-scale: 1;
+}
+
+html {
+    font-size: clamp(14px, 2.5vw, 18px);
+    overscroll-behavior: none;
+}
+
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: white;
+    color: black;
+    position: relative;
+    overscroll-behavior: none;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    cursor: none;
+}
+
+html, body, body * {
+    cursor: none !important;
+}
+
+/* Full-frame color multiply */
+.color-multiply-overlay {
+    --overlay-outer-color: #ece3df;
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-outer-color);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: 1003;
+}
+
+/* Cursor circle: 40px base, scales over clickables; smooth transition; will-change for smooth compositing */
+.color-multiply-cursor {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: #9df1b3;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: 1004;
+    transition: transform 0.25s ease;
+    will-change: transform;
+}
+
+.color-multiply-cursor.over-clickable {
+    transform: translate(-50%, -50%) scale(6.25);
+}
+
+/* Left and right white margin bars with thicker white outline; above header and page-end */
+body::before,
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: var(--page-margin-inline);
+    background: white;
+    outline: var(--page-margin-outline) solid white;
+    z-index: 1001;
+}
+
+body::before {
+    left: 0;
+}
+
+body::after {
+    right: 0;
+}
+
+/* Header: scale with viewport – 1 at ~14", 1.5 at ~27", 0.7 on phones */
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(50px * var(--header-scale));
+    border-bottom: 1px solid black;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 var(--page-margin-inline);
+    background: white;
+    z-index: 1000;
+}
+
+header .header-title,
+header .header-nav,
+header .header-nav span,
+header .header-dropdown span {
+    font-style: italic;
+    font-size: calc(24px * var(--header-scale));
+}
+
+header .header-title {
+    display: flex;
+    align-items: center;
+    gap: calc(16px * var(--header-scale));
+    padding-left: calc(8px * var(--header-scale));
+}
+
+header .header-title span {
+    white-space: nowrap;
+}
+
+header .header-title img {
+    height: 1em; /* match text height */
+    width: auto;
+    display: block;
+}
+
+header .header-nav span:last-child,
+header .header-dropdown span:last-child {
+    white-space: pre;
+}
+
+.header-nav {
+    display: flex;
+    gap: calc(20px * var(--header-scale));
+    align-items: center;
+}
+
+.header-nav span,
+.header-dropdown span {
+    cursor: pointer;
+}
+
+.member-button {
+    background: black;
+    color: white;
+    padding: 0 calc(10px * var(--header-scale));
+    height: 100%;
+    min-height: calc(50px * var(--header-scale));
+    display: flex;
+    align-items: center;
+    margin: 0 calc(-10px * var(--header-scale)) 0 0;
+    white-space: nowrap;
+}
+
+/* Menu button: hidden by default, shown when nav would wrap (see .header-nav-wrapped) */
+.header-menu-wrap {
+    display: none;
+    position: relative;
+}
+
+.header-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(44px * var(--header-scale));
+    height: calc(44px * var(--header-scale));
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+}
+
+.header-menu-icon {
+    width: calc(20px * var(--header-scale));
+    height: calc(2px * var(--header-scale));
+    background: black;
+    box-shadow: 0 calc(-6px * var(--header-scale)) 0 black, 0 calc(6px * var(--header-scale)) 0 black;
+}
+
+.header-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0;
+    min-width: calc(200px * var(--header-scale));
+    border: 1px solid black;
+    border-top: none;
+    background: white;
+    flex-direction: column;
+    padding: 0;
+}
+
+.header-dropdown span {
+    display: block;
+    padding: calc(12px * var(--header-scale)) calc(16px * var(--header-scale));
+    border-bottom: 1px solid black;
+}
+
+.header-dropdown span:last-child {
+    border-bottom: none;
+}
+
+.header-dropdown .member-button {
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    justify-content: center;
+    padding: calc(12px * var(--header-scale)) calc(16px * var(--header-scale));
+}
+
+/* When nav text would wrap: show only title + menu button, nav in dropdown (class toggled by JS) */
+.header-nav-wrapped .header-nav {
+    display: none;
+}
+
+.header-nav-wrapped .header-menu-wrap {
+    display: block;
+}
+
+.header-nav-wrapped .header-dropdown.is-open {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main content: stacked blocks, responsive to viewport; above margin bars; grows so footer stays at bottom on subpages */
+.content {
+    position: relative;
+    z-index: 1;
+    padding-top: calc(50px * var(--header-scale));
+    flex: 1 0 auto;
+}
+
+/* Get in Touch page: 3 vertical boxes (equal height), fit viewport, no scroll */
+main.get-in-touch-content {
+    flex: 1 1 0%;
+    min-height: 0;
+    padding-top: clamp(12px, 2vh, 44px);
+    padding-bottom: clamp(12px, 2vh, 44px);
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+    margin: 0 var(--page-margin-inline);
+    max-width: var(--page-max-width);
+    width: 100%;
+    box-sizing: border-box;
+    gap: 0;
+    overflow: hidden;
+}
+
+.get-in-touch-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+    gap: clamp(12px, 2.5vh, 24px);
+}
+
+.get-in-touch-intro-text {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(14px, 4vh, 40px);
+    line-height: 1.2;
+    color: black;
+}
+
+.get-in-touch-row {
+    display: flex;
+    width: 100%;
+    gap: clamp(8px, 1.5vw, 32px);
+    min-height: 0;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.get-in-touch-cell {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: clamp(4px, 1vh, 16px);
+    overflow: hidden;
+}
+
+.get-in-touch-cell p {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-size: clamp(10px, 2vh, 18px);
+    line-height: 1.35;
+    color: black;
+}
+
+.get-in-touch-email p {
+    font-size: clamp(12px, 3vh, 32px);
+}
+
+.get-in-touch-cell-title {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(12px, 2.5vh, 24px);
+    line-height: 1.2;
+    color: black;
+}
+
+.get-in-touch-cell-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.get-in-touch-btn {
+    display: inline-block;
+    padding: clamp(6px, 1.5vh, 15px) clamp(8px, 1.5vw, 20px);
+    border: none;
+    border-top: 1px solid black;
+    background: black;
+    color: white;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-size: clamp(14px, 3vh, 32px);
+    text-align: center;
+    cursor: pointer;
+    box-sizing: border-box;
+    text-decoration: none;
+}
+
+.get-in-touch-btn:hover {
+    color: white;
+}
+
+@media (max-width: 700px) {
+    .get-in-touch-row {
+        flex-direction: column;
+    }
+}
+
+.block {
+    padding: clamp(24px, 6vw, 60px) clamp(16px, 4vw, 20px) clamp(12px, 2vw, 28px);
+    margin: 0 var(--page-margin-inline);
+    max-width: var(--page-max-width);
+    /* Base font scales with viewport; block height follows text content */
+    font-size: clamp(18px, 5vw, 48px);
+}
+
+.block p {
+    font-weight: 900;
+    font-size: 1em;
+    line-height: 1.2;
+}
+
+.block-bullets {
+    font-size: 0.66em; /* 66% of block text */
+    font-weight: 900;
+    margin: 0.5em 0 0 0;
+    padding-left: 1.2em;
+    line-height: 1.3;
+}
+
+.block img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin-top: 1em;
+}
+
+/* GIF after each text block: centered, at least 70% of viewport width */
+.block-gif {
+    width: 100%;
+    margin: 0 var(--page-margin-inline);
+    max-width: var(--page-max-width);
+    padding: clamp(8px, 1.5vw, 20px) clamp(16px, 4vw, 20px) clamp(24px, 5vw, 48px);
+    display: flex;
+    justify-content: center;
+}
+
+.block-gif img {
+    display: block;
+    min-width: 70vw;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    vertical-align: bottom;
+}
+
+/* Page end: full-width separator + 3 framed fields (end of website); stacks above action box, same margins as content */
+.page-end {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    z-index: 101;
+    background: white;
+}
+
+.page-end-line {
+    width: 100%;
+    height: 0;
+    border-bottom: 1px solid black;
+}
+
+.page-end-bottom-line {
+    width: 100%;
+    height: 0;
+    border-top: 1px solid black;
+}
+
+.page-end-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 0 var(--page-margin-inline);
+    max-width: var(--page-max-width);
+    container-type: inline-size;
+    min-height: calc(8vh + clamp(120px, 20vmin, 150px));
+}
+
+.page-end-cell {
+    border: 1px solid black;
+    border-top: none;
+    border-bottom: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-end-cell-2-3 {
+    flex: 2;
+    min-width: 0;
+}
+
+.page-end-cell-1-3 {
+    flex: 1;
+    min-width: 0;
+}
+
+.page-end-cell-1-3 .page-end-btn {
+    flex: 1;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-end-cell-inner {
+    flex: 1;
+    padding: clamp(12px, 3vw, 20px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35em;
+}
+
+.page-end-title {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-size: clamp(14px, 3vw, 20px);
+    line-height: 1.2;
+    font-weight: 900;
+}
+
+.page-end-text {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-size: clamp(11px, 2.2vw, 14px);
+    line-height: 1.35;
+    font-weight: normal;
+}
+
+/* What we do block: 2× text size */
+.page-end-cell-2-3 .page-end-title {
+    font-size: clamp(28px, 6vw, 40px);
+}
+
+.page-end-cell-2-3 .page-end-text {
+    font-size: clamp(22px, 4.4vw, 28px);
+}
+
+.page-end-btn {
+    width: 100%;
+    margin: 0;
+    padding: clamp(10px, 2vw, 15px) clamp(12px, 2.5vw, 20px);
+    border: none;
+    border-top: 1px solid black;
+    background: black;
+    color: white;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-size: clamp(25px, 5vw, 32px);
+    text-align: center;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.page-end-cell + .page-end-cell {
+    border-left-width: 0;
+}
+
+/* Two boxes: same margin/max-width as row above so the divider lines up; stack like row on narrow */
+.page-end-squares {
+    display: flex;
+    margin: 0 var(--page-margin-inline);
+    max-width: var(--page-max-width);
+    width: 100%;
+    box-sizing: border-box;
+    container-type: inline-size;
+}
+
+.page-end-square:first-child {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid black;
+    border-top: none;
+    border-right: none;
+    background: white;
+    box-sizing: border-box;
+    order: 1;
+}
+
+.page-end-square-left {
+    display: flex;
+    flex-direction: column;
+    padding: clamp(12px, 3vw, 24px);
+    gap: clamp(8px, 2vw, 16px);
+}
+
+.page-end-square-title {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(28px, 6vw, 40px);
+    line-height: 1.2;
+}
+
+.page-end-square-video-wrap {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 56.25%;
+}
+
+.page-end-square-video {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.page-end-square:last-child {
+    flex: 0 0 33.333%;
+    width: 33.333%;
+    aspect-ratio: 1;
+    border: 1px solid black;
+    border-top: none;
+    border-left: 1px solid black;
+    background: white;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    order: 2;
+}
+
+/* Logo box: container for overlay text scaling */
+.page-end-square-media {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.4s ease;
+}
+
+.page-end-square-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10%;
+    box-sizing: border-box;
+}
+
+.page-end-square-logo img {
+    max-width: 50%;
+    max-height: 50%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.page-end-square-model {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.page-end-square-right.show-model .page-end-square-logo {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.page-end-square-right.show-model .page-end-square-model {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.page-end-square-model canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Contact box layout: 2 vertical cells, bottom split into 2 horizontal cells, no extra outlines */
+.page-end-square-right {
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    container-type: inline-size;
+    container-name: contact-box;
+}
+
+.contact-box-vertical {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.contact-box-top {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.contact-box-top p {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-size: clamp(25px, 5vw, 32px);
+}
+
+.contact-box-top a {
+    display: inline-block;
+    padding: 0;
+    background: transparent;
+    color: black;
+    text-decoration: underline;
+}
+
+.contact-box-bottom {
+    flex: 1;
+    display: flex;
+}
+
+.contact-box-bottom-cell {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.contact-box-bottom-cell p {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-size: clamp(25px, 5vw, 32px);
+}
+
+.contact-box-bottom-cell a {
+    color: black;
+    text-decoration: underline;
+}
+
+.contact-box-qr-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.contact-box-qr-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+/* Hover overlay on logo/model box: 70% white + centred text */
+.page-end-square-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(8px, 2cqmin, 24px);
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.9);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    overflow: auto;
+}
+
+.page-end-square-right:hover .page-end-square-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Text auto-sizes via JS to fill available space */
+.page-end-square-overlay-text {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    line-height: 1.35;
+    font-weight: normal;
+    text-align: center;
+    color: #111;
+    width: 100%;
+}
+
+/* Footer: two columns of simple link text */
+.page-end-footer {
+    margin: 0 var(--page-margin-inline);
+    max-width: var(--page-max-width);
+    padding: clamp(24px, 5vw, 48px) 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(24px, 4vw, 48px);
+    background: white;
+}
+
+.page-end-footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    align-items: center;
+    text-align: center;
+}
+
+.page-end-footer-col a {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: italic;
+    font-size: clamp(12px, 2.2vw, 15px);
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.page-end-footer-col a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 500px) {
+    .page-end-footer {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* When row is squeezed: stack the 2 cells underneath each other */
+@media (max-width: 1000px) {
+    .page-end-row {
+        flex-direction: column;
+    }
+    .page-end-cell {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .page-end-cell:nth-child(n + 2) {
+        border-left-width: 1px;
+        border-top: none;
+    }
+}
+
+/* When squeezed: Video box on top, Logo box at bottom */
+@media (max-width: 1000px) {
+    .page-end-squares {
+        flex-direction: column;
+    }
+    .page-end-square:first-child {
+        width: 100%;
+        border-right: 1px solid black;
+        order: 1;
+    }
+    .page-end-square:last-child {
+        flex: 1 1 auto;
+        width: 100%;
+        border-top: 1px solid black;
+        border-left: 1px solid black;
+        order: 2;
+    }
+}
+
+/* Block 5: 2×2 grid; narrow screens → 1×4 column; height follows content */
+/* Intro line above a 2×2 grid (block 3 and block 5): spacing matches grid gap + one line */
+.block-grid-intro {
+    margin: 0 0 calc(clamp(12px, 3vw, 24px) + 1em) 0;
+}
+
+.block-5-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: clamp(12px, 3vw, 24px);
+}
+
+.block-5-cell {
+    padding: clamp(16px, 4vw, 24px);
+    border: 1px solid black;
+    display: flex;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.block-5-cell-inner {
+    width: 100%;
+    text-align: left;
+}
+
+.block-5-cell-title {
+    margin: 0 0 0.35em 0;
+    font-family: inherit;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 0.75em;
+    line-height: 1.2;
+}
+
+/* Four box contents: 66% of standard block text (same as block 3 bullets) */
+.block-5-cell p.block-5-cell-text {
+    margin: 0.5em 0 0 0;
+    font-size: 0.66em;
+    font-weight: 900;
+    line-height: 1.3;
+}
+
+@media (max-width: 520px) {
+    .block-5-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(4, auto);
+    }
+}
